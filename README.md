@@ -79,6 +79,11 @@ Words of warning
 
 All stuff is intended for testing purposes. Don't use this .-) .
 
+Sojoner Version:
+----------------
+
+* v0.0.1
+
 ## License
 
 Copyright © 2014 sojoner

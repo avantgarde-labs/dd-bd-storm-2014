@@ -1,4 +1,4 @@
-(defproject dd-bd-storm-2014 "0.1.0-SNAPSHOT"
+(defproject dd-bd-storm-2014 "0.0.1"
   :source-paths ["src/clj"]
   :java-source-paths ["src/jvm" "test/jvm"]
   :test-paths ["test/clj"]
