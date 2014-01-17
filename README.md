@@ -3,13 +3,13 @@ dd-bd-storm-2014
 
 A Clojure storm example cooked up from the following projects.
 
-<pre> https://github.com/nathanmarz/storm-starter </pre>
+[storm-starter](https://github.com/nathanmarz/storm-starter)
 
-<pre> https://bitbucket.org/qanderson/polyglot-rolling-topology </pre>
+[rolling-topology](https://bitbucket.org/qanderson/polyglot-rolling-topology)
 
 For our Big-Data meetup in Dresden:
 
-<pre> http://www.meetup.com/Big-Data-User-Group-Dresden </pre>
+[DD-BD-Meetup](http://www.meetup.com/Big-Data-User-Group-Dresden)
 
 
 
