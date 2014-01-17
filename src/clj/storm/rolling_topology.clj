@@ -3,15 +3,19 @@
    (jvm.bolt RollingCountBolt IntermediateRankingsBolt TotalRankingsBolt)
    (com.hmsonline.storm.contrib.bolt.elasticsearch.mapper DefaultTupleMapper)
    (com.hmsonline.storm.contrib.bolt.elasticsearch ElasticSearchBolt)
-   (backtype.storm.testing TestWordSpout))
+   (jvm.tools Rankable)
+   (jvm.tools RankableObjectWithFields)
+   (backtype.storm.testing TestWordSpout)
+   (jvm.tools Rankings))
   (:use [backtype.storm clojure config]
         [utils.redis]
         [clojure.string])
+  (:require [clojure.data.json :as json])
   (:gen-class))
 
 (def TOP_N 5)
 
-(defspout word-spout ["word"]
+(quote(defspout word-spout ["word"]
   [conf context collector]
   (let [words ["storm"
    "development"
@@ -29,8 +33,7 @@
        )
      (ack [id]
       ))))
-
-; a spout reading strings from a redis list.
+)
 
 (defspout sentence-spout ["sentence"]
   [conf context collector]
@@ -50,6 +53,24 @@
         (emit-bolt! collector [word] :anchor tuple)))      
   (ack! collector tuple))
 
+(defbolt to-elasticsearch ["document" "index" "type" "id"] [tuple collector]
+  (let [rankings (.getValue tuple 0)
+        rankingList (.getRankings rankings)]
+      (doseq [rank rankingList]
+        (let [rankedObject (.getObject rank)
+              rankedCount (.getCount rank)
+              time_stamp (System/currentTimeMillis)
+              id (str (str time_stamp) (.toString rankedObject))
+              document (json/write-str {:id id :token rankedObject :time time_stamp})
+              ]
+          (emit-bolt! collector [document "storm-test" "rollingtoken" id] :anchor tuple)
+          )
+        )
+      )
+  (ack! collector tuple)
+)
+
+
 (defn mk-topology []
   (topology
    ;{"spout" (spout-spec word-spout)}
@@ -65,7 +86,10 @@
    "finalRanker" (bolt-spec {"intermediateRanker" :global}
      (TotalRankingsBolt. TOP_N)
      :parallelism-hint 1)
-   "finalIndexer" (bolt-spec {"finalRanker" :global}
+   
+   "toElasticSearch" (bolt-spec {"finalRanker" :shuffle} to-elasticsearch :p 3)
+   
+   "finalIndexer" (bolt-spec {"toElasticSearch" :shuffle}
      (ElasticSearchBolt. (new DefaultTupleMapper))
      :parallelism-hint 1)
    }))
@@ -76,7 +100,7 @@
       TOPOLOGY-DEBUG true
       "elastic.search.cluster" "Griffin"
       "elastic.search.host" "localhost"
-      "elastic.search.port" 9200
+      "elastic.search.port" 9300
       } (mk-topology))
     ;;(Thread/sleep 10000)
     ;;(.shutdown cluster)
