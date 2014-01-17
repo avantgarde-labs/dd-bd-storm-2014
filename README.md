@@ -17,7 +17,7 @@ Abstract:
 
 This example should compute rolling trending topics via storm.
 For presentation purpose i added a Redis Spout and the resulting
-ranks will be indexed to elasticsearch thx to this lib (storm-elastic-search)[https://github.com/hmsonline/storm-elastic-search].
+ranks will be indexed to elasticsearch thx to this lib [storm-elastic-search](https://github.com/hmsonline/storm-elastic-search).
 
 In combination with this [storm-vagrant](https://github.com/sojoner/storm-vagrant) setup,
 it's very easy to get some play time with [storm](https://github.com/nathanmarz/storm)
