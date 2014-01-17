@@ -14,32 +14,13 @@
   (:gen-class))
 
 (def TOP_N 5)
-
-(quote(defspout word-spout ["word"]
-  [conf context collector]
-  (let [words ["storm"
-   "development"
-   "is"
-   "even"
-   "more"
-   "enjoyable"
-   "on"
-   "a"
-   "MacBook"]]
-   (spout
-     (nextTuple []
-       (Thread/sleep 100)
-       (emit-spout! collector [(rand-nth words)])         
-       )
-     (ack [id]
-      ))))
-)
+(def REDIS_LIST "mylist")
 
 (defspout sentence-spout ["sentence"]
   [conf context collector]
   (spout
    (nextTuple []
-     (let [string (lpop-redis "mylist")]
+     (let [string (lpop-redis REDIS_LIST)]
        (cond string
         (emit-spout! collector [string])
         )))
@@ -61,7 +42,7 @@
               rankedCount (.getCount rank)
               time_stamp (System/currentTimeMillis)
               id (str (str time_stamp) (.toString rankedObject))
-              document (json/write-str {:id id :token rankedObject :time time_stamp})
+              document (json/write-str {:id id :token rankedObject :rankedCount rankedCount :time time_stamp})
               ]
           (emit-bolt! collector [document "storm-test" "rollingtoken" id] :anchor tuple)
           )
@@ -98,8 +79,8 @@
   (let [cluster (LocalCluster.)]
     (.submitTopology cluster "rolling-top-words" {
       TOPOLOGY-DEBUG true
-      "elastic.search.cluster" "Griffin"
-      "elastic.search.host" "localhost"
+      "elastic.search.cluster" "elasticsearch"
+      "elastic.search.host" "192.168.178.26"
       "elastic.search.port" 9300
       } (mk-topology))
     ;;(Thread/sleep 10000)
