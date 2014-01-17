@@ -38,7 +38,7 @@ You can run the example local with:
 
 <pre>lein run</pre>
 
-to run the example against a storm cluster you want to set up you storm client and stuff, find help in the storm starter project mentioned above.
+to run the example against a storm cluster you want to set up your storm client and stuff, find help in the storm starter project mentioned above.
 
 If you pass a name to the main function call the topology will run not in dev mode.
 
