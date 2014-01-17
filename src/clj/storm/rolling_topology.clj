@@ -1,6 +1,8 @@
 (ns storm.rolling-topology
   (:import (backtype.storm StormSubmitter LocalCluster)
    (jvm.bolt RollingCountBolt IntermediateRankingsBolt TotalRankingsBolt)
+   (com.hmsonline.storm.contrib.bolt.elasticsearch.mapper DefaultTupleMapper)
+   (com.hmsonline.storm.contrib.bolt.elasticsearch ElasticSearchBolt)
    (backtype.storm.testing TestWordSpout))
   (:use [backtype.storm clojure config]
         [utils.redis]
@@ -62,11 +64,20 @@
      :parallelism-hint 4)
    "finalRanker" (bolt-spec {"intermediateRanker" :global}
      (TotalRankingsBolt. TOP_N)
-     :parallelism-hint 1)}))
+     :parallelism-hint 1)
+   "finalIndexer" (bolt-spec {"finalRanker" :global}
+     (ElasticSearchBolt. (new DefaultTupleMapper))
+     :parallelism-hint 1)
+   }))
 
 (defn run-local! []
   (let [cluster (LocalCluster.)]
-    (.submitTopology cluster "rolling-top-words" {TOPOLOGY-DEBUG true} (mk-topology))
+    (.submitTopology cluster "rolling-top-words" {
+      TOPOLOGY-DEBUG true
+      "elastic.search.cluster" "Griffin"
+      "elastic.search.host" "localhost"
+      "elastic.search.port" 9200
+      } (mk-topology))
     ;;(Thread/sleep 10000)
     ;;(.shutdown cluster)
     ))
