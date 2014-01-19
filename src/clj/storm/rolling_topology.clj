@@ -13,7 +13,6 @@
   (:require [clojure.data.json :as json])
   (:gen-class))
 
-(def TOP_N 5)
 (def REDIS_LIST "mylist")
 
 (defspout sentence-spout ["sentence"]
@@ -36,11 +35,11 @@
 
 (defbolt to-elasticsearch ["document" "index" "type" "id"] [tuple collector]
   (let [rankings (.getValue tuple 0)
-        rankingList (.getRankings rankings)]
+        rankingList (.getRankings rankings)
+        time_stamp (System/currentTimeMillis)]        
       (doseq [rank rankingList]
         (let [rankedObject (.getObject rank)
-              rankedCount (.getCount rank)
-              time_stamp (System/currentTimeMillis)
+              rankedCount (.getCount rank)              
               id (str (str time_stamp) (.toString rankedObject))
               document (json/write-str {:id id :token rankedObject :rankedCount rankedCount :time time_stamp})
               ]
@@ -50,6 +49,11 @@
       )
   (ack! collector tuple)
 )
+; Topology cfg
+
+(def TOP_N 50)
+(def WINDOW_SEC 9)
+(def EMIT_SEC 3)
 
 
 (defn mk-topology []
@@ -59,7 +63,7 @@
    {"splitter" (bolt-spec {"spout" :shuffle} split-string :p 3)
     ; oh my god java
     "counter" (bolt-spec {"splitter" ["word"]}
-     (RollingCountBolt. 9 3)
+     (RollingCountBolt. WINDOW_SEC EMIT_SEC)
      :parallelism-hint 4)
    "intermediateRanker" (bolt-spec {"counter" ["obj"]}
      (IntermediateRankingsBolt. TOP_N)
@@ -68,19 +72,19 @@
      (TotalRankingsBolt. TOP_N)
      :parallelism-hint 1)
    
-   "toElasticSearch" (bolt-spec {"finalRanker" :shuffle} to-elasticsearch :p 3)
+   "toElasticSearch" (bolt-spec {"finalRanker" :global} to-elasticsearch :p 4)
    
    "finalIndexer" (bolt-spec {"toElasticSearch" :shuffle}
      (ElasticSearchBolt. (new DefaultTupleMapper))
-     :parallelism-hint 1)
+     :parallelism-hint 10)
    }))
 
 (defn run-local! []
   (let [cluster (LocalCluster.)]
     (.submitTopology cluster "rolling-top-words" {
       TOPOLOGY-DEBUG true
-      "elastic.search.cluster" "elasticsearch"
-      "elastic.search.host" "192.168.178.26"
+      "elastic.search.cluster" "vagrant_cluster"
+      "elastic.search.host" "44.44.44.220"
       "elastic.search.port" 9300
       } (mk-topology))
     ;;(Thread/sleep 10000)
@@ -90,8 +94,11 @@
 (defn submit-topology! [name]
   (StormSubmitter/submitTopology
    name
-   {TOPOLOGY-DEBUG true
-    TOPOLOGY-WORKERS 3}
+   {TOPOLOGY-DEBUG false
+    "elastic.search.cluster" "tiny_dresden"
+    "elastic.search.host" "144.76.187.43"
+    "elastic.search.port" 9300
+  }
     (mk-topology)))
 
 (defn -main

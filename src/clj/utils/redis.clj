@@ -3,7 +3,7 @@
 
 ; REDIS related stuff
 (def pool         (car/make-conn-pool)) ; See docstring for additional options
-(def redis-server1 (car/make-conn-spec :host "127.0.0.1" :port 6379))
+(def redis-server1 (car/make-conn-spec :host "44.44.44.2" :port 6379))
 
 (defmacro wcar [& body] `(car/with-conn pool redis-server1 ~@body))
 
